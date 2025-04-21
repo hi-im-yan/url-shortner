@@ -3,12 +3,14 @@ package database
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -22,6 +24,9 @@ type Service interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
+
+	// Insert into database
+	SaveShortUrl(*ShortUrlModel) (*ShortUrlModel, error)
 }
 
 type service struct {
@@ -112,4 +117,25 @@ func (s *service) Health() map[string]string {
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", database)
 	return s.db.Close()
+}
+
+func (s *service) SaveShortUrl(shortUrlModel *ShortUrlModel) (*ShortUrlModel, error) {
+	query := "INSERT INTO short_url (link, times_clicked, exp_time_minutes, short_code) VALUES ($1, 0, $2, $3) RETURNING id, link, times_clicked, exp_time_minutes, short_code;"
+
+	inserted := &ShortUrlModel{}
+	err := s.db.QueryRow(query, shortUrlModel.Link, shortUrlModel.ExpTimeMinutes, shortUrlModel.ShortCode).Scan(&inserted.Id, &inserted.Link, &inserted.TimesClicked, &inserted.ExpTimeMinutes, &inserted.ShortCode)
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			fmt.Println(pgErr.Message) // => syntax error at end of input
+			fmt.Println(pgErr.Code)    // => 42601
+			log.Printf("[database:SaveShortUrl] Error inserting short_url: %v", err)
+			return nil, err
+		}
+	}
+
+	log.Printf("[database:SaveShortUrl] Inserted: %+v", inserted)
+
+	return inserted, nil
 }
