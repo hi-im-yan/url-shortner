@@ -1,5 +1,14 @@
 # Simple Makefile for a Go project
 
+# Load environment variables from .env
+include .env
+export $(shell sed 's/=.*//' .env)
+
+GOOSE=goose
+DB_DRIVER=postgres
+MIGRATIONS_DIR=./migrations
+DB_DSN=postgres://$(BLUEPRINT_DB_USERNAME):$(BLUEPRINT_DB_PASSWORD)@$(BLUEPRINT_DB_HOST):$(BLUEPRINT_DB_PORT)/$(BLUEPRINT_DB_DATABASE)?sslmode=disable&search_path=$(BLUEPRINT_DB_SCHEMA)
+
 # Build the application
 all: build test
 
@@ -62,3 +71,23 @@ watch:
         fi
 
 .PHONY: all build run test clean watch docker-run docker-down itest
+
+# Commands
+
+db-migrate: # make db-migrate
+	$(GOOSE) -dir $(MIGRATIONS_DIR) $(DB_DRIVER) "$(DB_DSN)" up
+
+db-rollback:
+	$(GOOSE) -dir $(MIGRATIONS_DIR) $(DB_DRIVER) "$(DB_DSN)" down
+
+db-create: # make db-create name=create_users_table
+	$(GOOSE) -dir $(MIGRATIONS_DIR) create $(name) sql
+
+db-status:
+	$(GOOSE) -dir $(MIGRATIONS_DIR) $(DB_DRIVER) "$(DB_DSN)" status
+
+db-reset:
+	$(GOOSE) -dir $(MIGRATIONS_DIR) $(DB_DRIVER) "$(DB_DSN)" reset
+
+db-force: # make db-force version=20250417000123
+	$(GOOSE) -dir $(MIGRATIONS_DIR) $(DB_DRIVER) "$(DB_DSN)" force $(version)
