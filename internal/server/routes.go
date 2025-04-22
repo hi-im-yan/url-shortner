@@ -30,7 +30,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	r.Get("/health", s.healthHandler)
 
-	r.Get("/short", s.redirectUrlHandler)
+	r.Get("/short/{short_code}", s.redirectUrlHandler)
 	r.Post("/short", s.shortLinkHandler)
 
 	return r
@@ -54,10 +54,26 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) redirectUrlHandler(w http.ResponseWriter, r *http.Request) {
+	shortCode := r.PathValue("short_code")
+	log.Printf("[routes:redirectUrlHandler] Request received with short_code: {%s}", shortCode)
 
-	log.Println("Redirecting user")
+	entity, err := s.db.GetShortUrl(shortCode)
 
-	http.Redirect(w, r, "https://google.com", http.StatusSeeOther)
+	if err != nil {
+		errResponse := struct {
+			Status  int    `json:"status"`
+			Message string `json:"message"`
+		}{
+			Status:  404,
+			Message: "Did not found a valid url for the short_code",
+		}
+
+		json.NewEncoder(w).Encode(errResponse)
+		return 
+	}
+
+	log.Printf("[routes:redirectUrlHandler] Redirecting for short_code: {%s}", shortCode)
+	http.Redirect(w, r, entity.Link, http.StatusSeeOther)
 }
 
 func (s *Server) shortLinkHandler(w http.ResponseWriter, r *http.Request) {

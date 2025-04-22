@@ -27,6 +27,9 @@ type Service interface {
 
 	// Insert into database
 	SaveShortUrl(*ShortUrlModel) (*ShortUrlModel, error)
+
+	// Get the Shortned URL entity
+	GetShortUrl(shortCode string) (*ShortUrlModel, error)
 }
 
 type service struct {
@@ -138,4 +141,33 @@ func (s *service) SaveShortUrl(shortUrlModel *ShortUrlModel) (*ShortUrlModel, er
 	log.Printf("[database:SaveShortUrl] Inserted: %+v", inserted)
 
 	return inserted, nil
+}
+
+func (s *service) GetShortUrl(shortCode string) (*ShortUrlModel, error) {
+	log.Printf("[database:GetShortUrl] Querying for shortCode: {%s}", shortCode)
+	
+	query := "SELECT link, times_clicked, exp_time_minutes, short_code, created_at FROM short_url WHERE short_code=$1;"
+
+	searched := &ShortUrlModel{}
+	err := s.db.QueryRow(query, shortCode).Scan(&searched.Link, &searched.TimesClicked, &searched.ExpTimeMinutes, &searched.ShortCode, &searched.CreatedAt)
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			fmt.Println(pgErr.Message) // => syntax error at end of input
+			fmt.Println(pgErr.Code)    // => 42601
+			log.Printf("[database:GetShortUrl] Something went wrong: %v", err)
+			return nil, err
+		}
+
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Printf("[database:GetShortUrl] Query returned no rows: %+v", err)
+			return nil, err
+		}
+		
+	}
+
+	log.Printf("[database:GetShortUrl] Found a url: %+v", searched)
+
+	return searched, nil
 }
