@@ -30,6 +30,9 @@ type Service interface {
 
 	// Get the Shortned URL entity
 	GetShortUrl(shortCode string) (*ShortUrlModel, error)
+
+	// Update the shortned URL times_cliecked attribute
+	UpdateTimesClicked(shortCode string) error
 }
 
 type service struct {
@@ -145,7 +148,7 @@ func (s *service) SaveShortUrl(shortUrlModel *ShortUrlModel) (*ShortUrlModel, er
 
 func (s *service) GetShortUrl(shortCode string) (*ShortUrlModel, error) {
 	log.Printf("[database:GetShortUrl] Querying for shortCode: {%s}", shortCode)
-	
+
 	query := "SELECT link, times_clicked, exp_time_minutes, short_code, created_at FROM short_url WHERE short_code=$1;"
 
 	searched := &ShortUrlModel{}
@@ -164,10 +167,26 @@ func (s *service) GetShortUrl(shortCode string) (*ShortUrlModel, error) {
 			log.Printf("[database:GetShortUrl] Query returned no rows: %+v", err)
 			return nil, err
 		}
-		
+
 	}
 
 	log.Printf("[database:GetShortUrl] Found a url: %+v", searched)
 
 	return searched, nil
+}
+
+func (s *service) UpdateTimesClicked(shortCode string) error {
+	log.Printf("[database:UpdateTimesClicked] Updating times_clicked for shortCode: {%s}", shortCode)
+
+	query := "UPDATE short_url SET times_clicked = times_clicked + 1 WHERE short_code = $1;"
+
+	_, err := s.db.Exec(query, shortCode)
+
+	if err != nil {
+		log.Printf("[database:UpdateTimesClicked] something went wrong while updating for shortCode {%s}: %v", shortCode, err)
+		return err
+	}
+	log.Printf("[database:UpdateTimesClicked] Times_clicked updated for shortCode: {%s}", shortCode)
+
+	return nil
 }

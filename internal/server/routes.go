@@ -74,6 +74,7 @@ func (s *Server) redirectUrlHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[routes:redirectUrlHandler] Redirecting for short_code: {%s}", shortCode)
 	http.Redirect(w, r, entity.Link, http.StatusSeeOther)
+	s.db.UpdateTimesClicked(shortCode)
 }
 
 func (s *Server) shortLinkHandler(w http.ResponseWriter, r *http.Request) {
