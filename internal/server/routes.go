@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"time"
 
 	"url-shortner/internal/database"
 
@@ -66,6 +67,23 @@ func (s *Server) redirectUrlHandler(w http.ResponseWriter, r *http.Request) {
 		}{
 			Status:  404,
 			Message: "Did not found a valid url for the short_code",
+		}
+
+		json.NewEncoder(w).Encode(errResponse)
+		return 
+	}
+
+	// Checking for expiration time
+	expireAt := entity.CreatedAt.Add(time.Duration(entity.ExpTimeMinutes) * time.Minute)
+
+	if time.Now().After(expireAt) {
+		log.Printf("[routes:redirectUrlHandler] The link for short_code {%s} has expired", entity.ShortCode)
+		errResponse := struct {
+			Status  int    `json:"status"`
+			Message string `json:"message"`
+		}{
+			Status:  410,
+			Message: "Short Link is expired.",
 		}
 
 		json.NewEncoder(w).Encode(errResponse)
