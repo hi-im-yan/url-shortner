@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-
+	log.SetPrefix("[CRONJOBS] ")
 	log.Println("[cronjobs:main] Running cronjob")
 	c := cron.New()
 

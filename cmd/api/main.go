@@ -38,6 +38,7 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 
 func main() {
 
+	log.SetPrefix("[API] ")
 	log.Println("[api:main] Running api")
 
 	server := server.NewServer()
