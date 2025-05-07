@@ -33,6 +33,9 @@ type Service interface {
 
 	// Update the shortned URL times_cliecked attribute
 	UpdateTimesClicked(shortCode string) error
+
+	// Delete expired links
+	DeleteExpiredLinks() error
 }
 
 type service struct {
@@ -187,6 +190,22 @@ func (s *service) UpdateTimesClicked(shortCode string) error {
 		return err
 	}
 	log.Printf("[database:UpdateTimesClicked] Times_clicked updated for shortCode: {%s}", shortCode)
+
+	return nil
+}
+
+func (s *service) DeleteExpiredLinks() error {
+	log.Printf("[database:DeleteExpiredLinks] Deleting expired links")
+
+	query := "DELETE FROM short_url WHERE NOW() >= created_at + (exp_time_minutes || ' minutes')::interval;"
+
+	_, err := s.db.Exec(query)
+
+	if err != nil {
+		log.Printf("[database:DeleteExpiredLinks] something went wrong: %v", err)
+		return err
+	}
+	log.Printf("[database:DeleteExpiredLinks] Expired links deleted")
 
 	return nil
 }

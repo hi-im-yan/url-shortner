@@ -27,6 +27,8 @@ tmp/
 
 # Project build
 main
+api
+cronjob
 *templ.go
 
 # OS X generated file

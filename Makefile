@@ -13,14 +13,20 @@ DB_DSN=postgres://$(BLUEPRINT_DB_USERNAME):$(BLUEPRINT_DB_PASSWORD)@$(BLUEPRINT_
 all: build test
 
 build:
-	@echo "Building..."
-	
-	
-	@go build -o main cmd/api/main.go
+	@echo "Building api..."
+	@go build -o api cmd/api/main.go
+
+
+	@echo "Building cronjob..."
+	@go build -o cronjob cmd/cronjobs/main.go
 
 # Run the application
 run:
 	@go run cmd/api/main.go
+
+run-cronjobs:
+	@go run cmd/cronjobs/main.go
+	
 # Create DB container
 docker-run:
 	@if docker compose up -d --build 2>/dev/null; then \
